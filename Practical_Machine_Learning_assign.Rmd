@@ -1,0 +1,130 @@
+---
+title: "Practical Machine Learning Course Project"
+output: html_document
+---
+
+# Introduction
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+**Goal** -The goal of this project is to predict the manner in which they did the exercise. 
+
+##Load Data 
+```{r cache=FALSE}
+
+#install.packages("dplyr")
+#install.packages("caret", dependencies = TRUE)
+#install.packages("randomForest")
+library(caret)
+library(randomForest)
+library(rpart)
+library(partykit)
+
+fileurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+download.file(url=fileurl,destfile="har_raw.csv",method="curl")
+
+fileurl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+download.file(url=fileurl,destfile="har_raw_test.csv",method="curl")
+
+har_raw_test <- read.csv("har_raw_test.csv")
+dim(har_raw_test)
+har_raw <- read.csv("har_raw.csv")
+dim(har_raw)
+
+```
+
+** Cleaning Data**
+Remove columns with all null values.
+```{r cache=FALSE}
+nzv <- nearZeroVar(har_raw_test)
+har_raw_test1 <- har_raw_test[, -nzv]
+dim(har_raw_test1)
+HAR_TEST <- har_raw_test1
+dim(HAR_TEST)
+
+nzv <- nearZeroVar(har_raw)
+har_raw1 <- har_raw[, -nzv]
+dim(har_raw1); dim(HAR_TEST);
+
+```
+
+Remove columns which have <5% values and not in test set.
+```{r cache=FALSE}
+clean1 <- colnames(HAR_TEST[,-59])
+clean2 <- c(clean1,"classe")
+har_raw2 <- har_raw1[clean2]
+dim(har_raw2)
+har_raw3 <- har_raw2[,colSums(is.na(har_raw2)) <= 0.6*nrow(har_raw2)] 
+```
+
+
+
+Partition training set into training and test set.
+
+```{r cache=FALSE}
+set.seed(111)
+HAR <- har_raw3
+intrain <- createDataPartition(y=HAR$classe,p=0.6,list=FALSE)
+har_train <- HAR[intrain,]
+har_test_val <- HAR[-intrain,]
+inval <- createDataPartition(y=har_test_val$classe,p=0.5,list=FALSE)
+har_test <- har_test_val[inval,]
+har_val <- har_test_val[-inval,]
+
+```
+
+# Training a model
+As goal of this project fall under classification problem, so I will evaluate method rpart (classification tree) and rf- randomForest.
+
+```{r cache=FALSE}
+
+mod1 <- train(har_train$classe ~. , data=har_train,method="rpart")
+mod1
+```
+
+Making predictions on the test set
+
+```{r cache=FALSE }
+har_test <- har_test[complete.cases(har_test),]
+pred1 <- predict(mod1, har_test,na.action = na.pass)
+
+print(confusionMatrix(pred1, har_test$classe), digits=4)
+
+```
+
+The Accuracy for rpart model is 0.51 which is very low, so we will check randomForest model.
+
+```{r cache=FALSE}
+
+model2 <- train(har_val$classe ~. , data=har_val,method="rf",prox=TRUE,ntree=100)
+model2
+```
+
+Making predictions on the test set
+
+```{r cache=FALSE}
+pred2 <- predict(model2, har_test,na.action = na.pass)
+confusionMatrix(pred2, har_test$classe)
+
+```
+
+**Conclusion:-** Accuracy in randomForest model shows 0.98.
+
+**Out of sample**
+
+```{r cache=FALSE}
+mean(predict(model2,har_test) == har_test$classe) * 100
+```
+
+
+Applying model on test data given in assighnment.
+
+```{r }
+test_pred <- predict(mod2, HAR_TEST)
+test_pred
+table(test_pred)
+```
+ 
+
+##References
+- Predictive Modeling with R and the caret Package, Max Kuhn, Ph.D (http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf)
