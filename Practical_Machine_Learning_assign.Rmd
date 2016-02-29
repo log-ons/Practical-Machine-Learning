@@ -92,11 +92,11 @@ print(confusionMatrix(pred1, har_test$classe), digits=4)
 
 ```
 
-The Accuracy for rpart model is 0.51 which is very low, so we will check randomForest model.
+####The Accuracy for rpart model is 0.5692 which is very low, so we will check randomForest model.
 
 ```{r cache=FALSE}
 
-model2 <- train(har_val$classe ~. , data=har_val,method="rf",prox=TRUE,ntree=100)
+model2 <- train(har_train$classe ~. , data=har_train,method="rf",prox=TRUE)
 model2
 ```
 
@@ -108,7 +108,7 @@ confusionMatrix(pred2, har_test$classe)
 
 ```
 
-**Conclusion:-** Accuracy in randomForest model shows 0.98.
+**Conclusion:-** Accuracy in randomForest model shows 99.97.
 
 **Out of sample**
 
@@ -120,11 +120,11 @@ mean(predict(model2,har_test) == har_test$classe) * 100
 Applying model on test data given in assighnment.
 
 ```{r }
-test_pred <- predict(mod2, HAR_TEST)
+test_pred <- predict(model2, HAR_TEST)
 test_pred
 table(test_pred)
 ```
  
 
 ##References
-- Predictive Modeling with R and the caret Package, Max Kuhn, Ph.D (http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf)
+- Predictive Modeling with R and the caret Package, Max Kuhn, Ph.D a('http://www.edii.uclm.es/~useR-2013/Tutorials/kuhn/user_caret_2up.pdf')
